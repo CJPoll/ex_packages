@@ -3,6 +3,7 @@
 Adds support for package-scoped functions to Elixir-Lang.
 
 1. Enables declaring which package a module belongs to
+1. All your `@module_attributes` still work the same way (`@spec`, `@doc`, etc.)
 1. Raises a compile error if your module calls a restricted function that's not
    in the same package
 1. IEx sessions can call any restricted function for convenience
@@ -173,19 +174,36 @@ defmodule PackageExamples.Module1 do
     _e -> :ok
   end
 
+  # Supports function-level catch blocks with guards
+  defr function8(arg1, _arg2, nil) when not is_nil(arg1) do
+    throw("Exception")
+  catch
+    _e -> :ok
+  end
+
+  # Supports function-level catch blocks without guards
+  defr function8(_arg1, _arg2, _arg3) do
+    throw("Exception")
+  catch
+    _e -> :ok
+  end
+
   # Supports recursive function calls
   defr recursive_function1() do
     IO.inspect("Yes!")
     recursive_function1()
   end
 
-  # Supports default value clauses
+  # Supports default value clauses, docs, and specs (and any other
+  # @module_attribute that can affect functions)
+  @doc "Given a number n, gets the sum of every number 1..n (inclusive)"
+  @spec recursive_function2(non_neg_integer) :: non_neg_integer
   defr(recursive_function2(n, sum \\ 0))
 
   # Supports 1-liner syntax (with rescue, catch, and finally support too)
   defr(recursive_function2(0, sum), do: sum)
 
-  defr recursive_function2(n, sum) when is_integer(n) do
+  defr recursive_function2(n, sum) when is_integer(n) and n > 0 do
     recursive_function2(n - 1, sum + n)
   end
 end

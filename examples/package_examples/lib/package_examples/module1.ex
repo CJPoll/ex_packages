@@ -54,6 +54,18 @@ defmodule PackageExamples.Module1 do
     _e -> :ok
   end
 
+  defr function8(arg1, _arg2, nil) when not is_nil(arg1) do
+    throw("Exception")
+  catch
+    _e -> :ok
+  end
+
+  defr function8(_arg1, _arg2, _arg3) do
+    throw("Exception")
+  catch
+    _e -> :ok
+  end
+
   defr recursive_function1() do
     IO.inspect("Yes!")
     recursive_function1()

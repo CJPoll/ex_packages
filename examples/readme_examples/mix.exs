@@ -21,6 +21,8 @@ defmodule ReadmeExamples.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      # To test that @doc and @spec work correctly
+      {:ex_doc, "~> 0.21.0"},
       {:packages, path: "../../"}
     ]
   end

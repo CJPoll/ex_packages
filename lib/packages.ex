@@ -35,28 +35,7 @@ defmodule Packages do
     quote do
       import unquote(__MODULE__)
       def __package__, do: unquote(package_name)
-      @before_compile unquote(__MODULE__)
     end
-  end
-
-  defmacro __before_compile__(env) do
-    protecteds =
-      env.module
-      |> Module.get_attribute(:protecteds, [])
-      |> Enum.reverse()
-
-    macros_ast =
-      for {macro_name, arity, _ast} <-
-            Enum.uniq_by(protecteds, fn {function, arity, _ast} -> {function, arity} end) do
-        macro_ast(macro_name, arity)
-      end
-
-    functions_ast =
-      for {_function, _arity, ast} <- protecteds do
-        ast
-      end
-
-    macros_ast ++ functions_ast
   end
 
   defmacro defr({macro_name, context, args}) do
@@ -68,26 +47,46 @@ defmodule Packages do
         def(unquote(ast))
       end
 
-    Module.put_attribute(__CALLER__.module, :protecteds, {macro_name, length(args), ast})
+    arity = length(args)
 
-    nil
+    if macro_name == :function8 do
+      IO.inspect(arity, label: "Function 8 Arity")
+      IO.inspect(args, label: "Function 8 Args")
+    end
+
+    macro_ast =
+      if Module.get_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity)) do
+        nil
+      else
+        Module.put_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity), true)
+        macro_ast(macro_name, arity)
+      end
+
+    quote do
+      unquote(macro_ast)
+      unquote(ast)
+    end
   end
 
   defmacro defr({:when, meta, [{macro_name, meta2, args}, guards]}, blocks) do
     ast = {:when, meta, [{protected_name(macro_name), meta2, args}, guards]}
 
     args =
-      for {name, meta, context} <- args do
-        name =
-          name
-          |> Atom.to_string()
-          |> String.replace_leading("_", "")
-          # This atom creation is safe, as it's taking a finite number of
-          # programmer-defined inputs.
-          |> String.to_atom()
+      Enum.map(args, fn
+        {name, meta, context} ->
+          name =
+            name
+            |> Atom.to_string()
+            |> String.replace_leading("_", "")
+            # This atom creation is safe, as it's taking a finite number of
+            # programmer-defined inputs.
+            |> String.to_atom()
 
-        {name, meta, context}
-      end
+          {name, meta, context}
+
+        other ->
+          other
+      end)
 
     ast =
       quote do
@@ -95,9 +94,25 @@ defmodule Packages do
         def(unquote(ast), unquote(blocks))
       end
 
-    Module.put_attribute(__CALLER__.module, :protecteds, {macro_name, length(args), ast})
+    arity = length(args)
 
-    nil
+    if macro_name == :function8 do
+      IO.inspect(arity, label: "Function 8 Arity")
+      IO.inspect(args, label: "Function 8 Args")
+    end
+
+    macro_ast =
+      if Module.get_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity)) do
+        []
+      else
+        Module.put_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity), true)
+        macro_ast(macro_name, arity)
+      end
+
+    quote do
+      unquote(macro_ast)
+      unquote(ast)
+    end
   end
 
   defmacro defr({macro_name, meta, args}, blocks) do
@@ -133,9 +148,20 @@ defmodule Packages do
         def(unquote(ast), unquote(blocks))
       end
 
-    Module.put_attribute(__CALLER__.module, :protecteds, {macro_name, length(args), ast})
+    arity = length(args)
 
-    nil
+    macro_ast =
+      if Module.get_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity)) do
+        []
+      else
+        Module.put_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity), true)
+        macro_ast(macro_name, arity)
+      end
+
+    quote do
+      unquote(macro_ast)
+      unquote(ast)
+    end
   end
 
   @spec package_for(module) :: package | nil
@@ -231,12 +257,16 @@ defmodule Packages do
     :"__#{name}_protected__"
   end
 
+  defp macro_attribute_key(function, arity) do
+    :"protected_#{function}_#{arity}"
+  end
+
   defp same_package?(calling_module, destination_module) do
     # Only called during compilation
     #
     # destination_module will have been compiled already, so we can just call
     # the __package__() function on it.
-    # 
+    #
     # calling_module is currently being compiled, so its __package__() function
     # is undefined. We need to get its package name from Module storage and
     # expand it.

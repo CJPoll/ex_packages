@@ -7,6 +7,9 @@ defmodule MyApp.ModuleA do
   end
 
   # Internal Functions
+
+  @doc "Hello"
+  @spec restricted_function() :: String.t()
   defr restricted_function do
     "This is a restricted function"
   end
