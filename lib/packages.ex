@@ -195,7 +195,7 @@ defmodule Packages do
       length(args)
     },
     \twhich is a protected function. This function can be called from IEx, but
-    \tnot from outside package "#{inspect(destination_module.__package__())}"
+    \tnot from outside package #{inspect(destination_module.__package__())}
     """
   end
 
