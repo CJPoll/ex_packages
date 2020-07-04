@@ -49,17 +49,12 @@ defmodule Packages do
 
     arity = length(args)
 
-    if macro_name == :function8 do
-      IO.inspect(arity, label: "Function 8 Arity")
-      IO.inspect(args, label: "Function 8 Args")
-    end
-
     macro_ast =
       if Module.get_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity)) do
         nil
       else
         Module.put_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity), true)
-        macro_ast(macro_name, arity)
+        macro_ast(macro_name, args)
       end
 
     quote do
@@ -96,17 +91,12 @@ defmodule Packages do
 
     arity = length(args)
 
-    if macro_name == :function8 do
-      IO.inspect(arity, label: "Function 8 Arity")
-      IO.inspect(args, label: "Function 8 Args")
-    end
-
     macro_ast =
       if Module.get_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity)) do
         []
       else
         Module.put_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity), true)
-        macro_ast(macro_name, arity)
+        macro_ast(macro_name, args)
       end
 
     quote do
@@ -155,7 +145,7 @@ defmodule Packages do
         []
       else
         Module.put_attribute(__CALLER__.module, macro_attribute_key(macro_name, arity), true)
-        macro_ast(macro_name, arity)
+        macro_ast(macro_name, args)
       end
 
     quote do
@@ -173,14 +163,31 @@ defmodule Packages do
 
   # Private Functions
 
-  defp args_ast(0) do
-    []
+  defp args_ast(args) do
+    args
+    |> Enum.with_index()
+    |> Enum.map(fn
+      {{:"\\\\", outer_meta, [{_, inner_meta, o}, default]}, i} ->
+        {:"\\\\", outer_meta, [{:"arg#{i + 1}", inner_meta, o}, default]}
+
+      {{_, meta, o}, i} ->
+        {:"arg#{i + 1}", meta, o}
+
+      {_other, i} ->
+        {:"arg#{i + 1}", [], nil}
+    end)
   end
 
-  defp args_ast(arity) do
-    for n <- 1..arity do
-      {:"arg#{n}", [], nil}
-    end
+  defp calling_args_ast(args) do
+    args
+    |> Enum.with_index()
+    |> Enum.map(fn
+      {{:"\\\\", _outer_meta, [{_, inner_meta, o}, _default]}, i} ->
+        {:"arg#{i + 1}", inner_meta, o}
+
+      {_other, i} ->
+        {:"arg#{i + 1}", [], nil}
+    end)
   end
 
   # Not technically private, but not part of the public API either
@@ -225,7 +232,7 @@ defmodule Packages do
     """
   end
 
-  defp macro_ast(macro_name, 0) do
+  defp macro_ast(macro_name, []) do
     quote do
       defmacro unquote(macro_name)() do
         unquote(__MODULE__).__dispatch__(
@@ -238,8 +245,9 @@ defmodule Packages do
     end
   end
 
-  defp macro_ast(macro_name, arity) do
-    args_ast = args_ast(arity)
+  defp macro_ast(macro_name, args) do
+    args_ast = args_ast(args)
+    calling_args_ast = calling_args_ast(args)
 
     quote do
       defmacro unquote(macro_name)(unquote_splicing(args_ast)) do
@@ -247,7 +255,7 @@ defmodule Packages do
           __CALLER__.module,
           __MODULE__,
           unquote(macro_name),
-          unquote(args_ast)
+          unquote(calling_args_ast)
         )
       end
     end

@@ -8,7 +8,7 @@ defmodule MyApp.ModuleA do
 
   # Internal Functions
 
-  @doc "Hello"
+  @doc "This documentation and spec should show up in the docs for `restricted_function`"
   @spec restricted_function() :: String.t()
   defr restricted_function do
     "This is a restricted function"
