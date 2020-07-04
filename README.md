@@ -208,3 +208,34 @@ defmodule PackageExamples.Module1 do
   end
 end
 ```
+
+Some other potentially odd cases around module attributes also handled correctly:
+
+```elixir
+defmodule MyApp.ModuleD do
+  use Packages, package: Package1
+
+  @thing :a
+
+  defr thing(true) do
+    @thing
+  end
+
+  @thing :b
+
+  defr thing(false) do
+    @thing
+  end
+end
+```
+
+```elixir
+iex(1)> alias MyApp.ModuleD; require MyApp.ModuleD
+MyApp.ModuleD
+
+iex(2)> ModuleD.thing(true)
+:a
+
+iex(3)> ModuleD.thing(false)
+:b
+```
