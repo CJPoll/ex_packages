@@ -96,6 +96,10 @@ defmodule PackageExamples.Module1 do
   defr(function15(stuff, :patterned_value), do: stuff)
   defr(function16(stuff) when is_atom(stuff), do: stuff)
 
+  defr function17(stuff \\ 1, stuff2 \\ 2) do
+    {stuff, stuff2}
+  end
+
   defr infinite_recursive_function() do
     IO.inspect("Just 1 more level...")
     infinite_recursive_function()

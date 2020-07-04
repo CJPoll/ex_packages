@@ -113,6 +113,16 @@ defmodule PackageExamples.Module1.Test do
     end
   end
 
+  describe "function17/2" do
+    test "works with multiple default values" do
+      assert @test_module.function17(1, 2) == {1, 2}
+      assert @test_module.function17(2, 3) == {2, 3}
+      assert @test_module.function17(1) == {1, 2}
+      assert @test_module.function17(2) == {2, 2}
+      assert @test_module.function17() == {1, 2}
+    end
+  end
+
   describe "recursive_function1" do
     test "works when default argument is used in bodyless clause for multi-clause function" do
       assert @test_module.recursive_function1(3) == 6
